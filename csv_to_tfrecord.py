@@ -17,9 +17,9 @@ from PIL import Image
 from models.object_detection.utils import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('csv_input', 'DATA_edit/data1013/medical_train_2.csv', 'Path to the CSV input')
-flags.DEFINE_string('img_input', 'DATA_edit/data1013/train/', 'Path to the images input')
-flags.DEFINE_string('output_path', 'DATA_edit/data1013/medical_train_2.tfrecord', 'Path to output TFRecord')
+flags.DEFINE_string('csv_input', 'DATA_edit/data1010/medical_train_1.csv', 'Path to the CSV input')
+flags.DEFINE_string('img_input', 'DATA_edit/data1010/train/', 'Path to the images input')
+flags.DEFINE_string('output_path', 'DATA_edit/medical_train_1.tfrecord', 'Path to output TFRecord')
 FLAGS = flags.FLAGS
 
 
@@ -56,12 +56,18 @@ def create_tf_example(row, img_input):
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': dataset_util.int64_feature(height),
         'image/width': dataset_util.int64_feature(width),
+        'image/filename': dataset_util.bytes_feature(filename),
+        'image/source_id': dataset_util.bytes_feature(filename),
         'image/channels': dataset_util.int64_feature(channels),
         'image/shape': dataset_util.int64_list_feature(shape),
         'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
         'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
         'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
         'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
+        'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
+        'image/object/class/label': dataset_util.int64_list_feature(classes),
+        'image/object/difficult': dataset_util.int64_list_feature(difficult),
+        'image/object/truncated': dataset_util.int64_list_feature(truncated),
         'image/object/bbox/label': dataset_util.int64_list_feature(classes),
         'image/object/bbox/label_text': dataset_util.bytes_list_feature(classes_text),
         'image/object/bbox/difficult': dataset_util.int64_list_feature(difficult),
