@@ -1,13 +1,13 @@
+"""
+convert xml files to csv format file
+"""
 import os
 import glob
 import xml.etree.ElementTree as ET
 import pandas as pd
 
 
-def xml_to_csv():
-    csv_name = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/data1013/medical_train_2.csv'
-    image_path = os.path.join('C:/Projects/Medical_image/Endoscopic/DATA_edit/data1013/train') #folder name
-
+def run(csv_name, image_path):
     xml_list = []
     for xml_file in glob.glob(image_path + '/*.xml'):
         tree = ET.parse(xml_file)
@@ -31,4 +31,7 @@ def xml_to_csv():
 
 
 if __name__ == '__main__':
-    xml_to_csv()
+    csv_name = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/data1013/medical_train_2.csv'
+    image_path = os.path.join('C:/Projects/Medical_image/Endoscopic/DATA_edit/data1013/train') #folder name
+
+    run(csv_name, image_path)

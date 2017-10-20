@@ -1,9 +1,11 @@
+"""
+convert bmp files to jpg files
+"""
 import os
 import sys
 from PIL import Image
 
-def bmp_to_jpg(dirname):
-
+def run(dirname):
     for (dirpath, _, filenames) in os.walk(dirname):
         for filename in filenames:
             ext = os.path.splitext(filename)[-1]
@@ -21,4 +23,4 @@ if __name__ == '__main__':
     else:
         DIR = sys.argv[1]
 
-    bmp_to_jpg(DIR)
+    run(DIR)

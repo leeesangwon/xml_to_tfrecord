@@ -1,4 +1,6 @@
-import copy
+"""
+change ext information of image in xml file from bmp to jpg
+""" 
 import os
 import re
 import sys
@@ -8,7 +10,7 @@ import xml.etree.ElementTree as ET
 FROM = 'bmp'
 TO = 'jpg'
 
-def xml_ext_change(dir_in, dir_out):
+def run(dir_in, dir_out):
     pathlist_in = list()
     pathlist_in = search_xml(dir_in)
 
@@ -45,11 +47,12 @@ def change_ext(xml_in, from_, to_):
     path_tag.text = re.sub(r"\."+from_, "."+to_, path_tag.text)
     return xml_out
 
+if __name__ == '__main__':
 
-assert len(sys.argv) == 3, \
-"USAGE: python xml_merge.py <output dir> <input dir>"
+    assert len(sys.argv) == 3, \
+    "USAGE: python xml_merge.py <output dir> <input dir>"
 
-XML_DIR_OUT = sys.argv[1]
-XML_DIR_IN = sys.argv[2]
+    XML_DIR_OUT = sys.argv[1]
+    XML_DIR_IN = sys.argv[2]
 
-xml_ext_change(XML_DIR_IN, XML_DIR_OUT)
+    run(XML_DIR_IN, XML_DIR_OUT)

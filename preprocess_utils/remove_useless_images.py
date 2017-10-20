@@ -1,7 +1,10 @@
+''' 
+remove image files which don't have matched xml files 
+'''
 import os
+import sys
 
-def remove_img_which_does_not_have_xml(dirname):
-
+def run(dirname):
     for (dirpath, dirnames, filenames) in os.walk(dirname):
         xmllist = []
         imglist = []
@@ -18,5 +21,10 @@ def remove_img_which_does_not_have_xml(dirname):
 
 
 if __name__ == '__main__':
-    DIR = os.getcwd()
-    remove_img_which_does_not_have_xml(DIR)
+    assert len(sys.argv) == 1 or len(sys.argv) == 2, 'ERROR: Too many arguments'
+    if len(sys.argv) == 1:
+        DIR = os.getcwd()
+    else:
+        DIR = sys.argv[1]
+
+    run(DIR)
