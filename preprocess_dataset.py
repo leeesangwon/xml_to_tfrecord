@@ -9,5 +9,8 @@ def run(dirname):
 
 
 if __name__ == '__main__':
-    DIR = sys.argv[1]
+    if len(sys.argv) < 2:
+        DIR = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/test'
+    else:
+        DIR = sys.argv[1]
     run(DIR)

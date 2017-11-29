@@ -8,19 +8,28 @@ Usage:
 """
 from __future__ import division, print_function
 
-import os
+import os, sys
 import io
 import pandas as pd
 import tensorflow as tf
 
 from PIL import Image
-from models.object_detection.utils import dataset_util
+sys.path.append('C:/Projects/tf/models/research')
+from object_detection.utils import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('csv_input', 'DATA_edit/data1010/medical_train_1.csv', 'Path to the CSV input')
-flags.DEFINE_string('img_input', 'DATA_edit/data1010/train/', 'Path to the images input')
-flags.DEFINE_string('output_path', 'DATA_edit/medical_train_1.tfrecord', 'Path to output TFRecord')
+flags.DEFINE_string('csv_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_validation_1.csv', 'Path to the CSV input')
+flags.DEFINE_string('img_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/data/', 'Path to the images input')
+flags.DEFINE_string('output_path', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_validation_1.tfrecord', 'Path to output TFRecord')
 FLAGS = flags.FLAGS
+
+
+class InvalidFileNameError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 
 def class_text_to_int(row_label):
@@ -32,8 +41,28 @@ def class_text_to_int(row_label):
         None
 
 
+def is_benign(row):
+    return is_valid_file(row, ['u', 'b'], 'Benign')
+
+
+def is_cancer(row):
+    return is_valid_file(row, ['c', 'm'], 'Malignant')
+
+
+def is_valid_file(row, filename_head, classname):
+    is_filename_valid = (row['filename'][0].lower() in filename_head)
+    is_class_valid = (row['class'] == classname)
+    return is_filename_valid and is_class_valid
+
+
 def create_tf_example(row, img_input):
-    full_path = os.path.join(os.getcwd(), img_input, '{}'.format(row['filename']))
+    if is_benign(row):
+        folder_name = 'benign/'
+    elif is_cancer(row):
+        folder_name = 'cancer/'
+    else:
+        raise InvalidFileNameError("Invalid Filename")
+    full_path = os.path.join(img_input, folder_name, '{}'.format(row['filename']))
     with tf.gfile.GFile(full_path, 'rb') as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
