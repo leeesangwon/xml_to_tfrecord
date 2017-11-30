@@ -18,9 +18,9 @@ sys.path.append('C:/Projects/tf/models/research')
 from object_detection.utils import dataset_util
 
 flags = tf.app.flags
-flags.DEFINE_string('csv_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_validation_1.csv', 'Path to the CSV input')
+flags.DEFINE_string('csv_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_train_0.csv', 'Path to the CSV input')
 flags.DEFINE_string('img_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/data/', 'Path to the images input')
-flags.DEFINE_string('output_path', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_validation_1.tfrecord', 'Path to output TFRecord')
+flags.DEFINE_string('output_path', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_train_0.tfrecord', 'Path to output TFRecord')
 FLAGS = flags.FLAGS
 
 
@@ -108,13 +108,18 @@ def create_tf_example(row, img_input):
 
 
 def main(_):
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
-    examples = pd.read_csv(FLAGS.csv_input)
-    for index, row in examples.iterrows():
-        tf_example = create_tf_example(row, FLAGS.img_input)
-        writer.write(tf_example.SerializeToString())
+    FLAGS.img_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/data/'
+    for i in range(5):
+        for trainval in ['train', 'validation']:
+            FLAGS.csv_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_' + trainval + '_' + str(i)+'.csv'
+            FLAGS.output_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_' + trainval + '_'+str(i)+'.tfrecord'
+            writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+            examples = pd.read_csv(FLAGS.csv_input)
+            for index, row in examples.iterrows():
+                tf_example = create_tf_example(row, FLAGS.img_input)
+                writer.write(tf_example.SerializeToString())
 
-    writer.close()
+            writer.close()
 
 
 if __name__ == '__main__':
