@@ -89,6 +89,7 @@ def create_tf_example(row, img_input):
         'image/source_id': dataset_util.bytes_feature(filename),
         'image/channels': dataset_util.int64_feature(channels),
         'image/shape': dataset_util.int64_list_feature(shape),
+        'image/class': dataset_util.int64_list_feature(classes),
         'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
         'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
         'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
@@ -120,7 +121,18 @@ def main(_):
                 writer.write(tf_example.SerializeToString())
 
             writer.close()
+    ## test
+    FLAGS.img_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/test/'
+    FLAGS.csv_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_test.csv'
+    FLAGS.output_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_test.tfrecord'
+    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    examples = pd.read_csv(FLAGS.csv_input)
+    for index, row in examples.iterrows():
+        tf_example = create_tf_example(row, FLAGS.img_input)
+        writer.write(tf_example.SerializeToString())
 
+    writer.close()
+    print('conversion complete')
 
 if __name__ == '__main__':
     tf.app.run()
