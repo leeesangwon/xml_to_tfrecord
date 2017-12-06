@@ -6,6 +6,7 @@ import glob
 import xml.etree.ElementTree as ET
 import pandas as pd
 import random
+import imageio
 
 TRAIN_RATIO = 0.8
 
@@ -58,13 +59,13 @@ def _gen_csv_for_trainval(csv_path, image_path, column_name, num_of_cross_val, t
 
 
 def _gen_csv_for_test(csv_path, image_path, column_name):
-    test_benign_list = glob.glob(os.path.join(image_path, 'benign', '*.xml'))
+    test_benign_list = glob.glob(os.path.join(image_path, 'benign', '*.jpg'))
     benign_test, _ = _split_list_by_random(test_benign_list, 1)
-    test_cancer_list = glob.glob(os.path.join(image_path, 'cancer', '*.xml'))
+    test_cancer_list = glob.glob(os.path.join(image_path, 'cancer', '*.jpg'))
     cancer_test, _ = _split_list_by_random(test_cancer_list, 1)
 
     test_list = []
-    test_list = _parse_xml(benign_test + cancer_test)
+    test_list = _make_dummy_bbox_info(benign_test + cancer_test)
     test_df = pd.DataFrame(test_list, columns=column_name)
     test_df.to_csv(csv_path + '_test.csv', index=None)
 
@@ -102,6 +103,23 @@ def _parse_xml(xml_files):
                     )
             xml_list.append(value)
     return xml_list
+
+
+def _make_dummy_bbox_info(img_files):
+    bbox_info_list = []
+    class_dict = {
+        'benign': 'Benign',
+        'cancer': 'Malignant'
+    }
+    for img_file in img_files:
+        img_filename = os.path.basename(img_file)
+        h, w, c = imageio.imread(img_file).shape
+        value = (img_filename, w, h, c,
+                    class_dict[os.path.basename(os.path.dirname(img_file))],
+                    0, 0, 0, 0
+                )
+        bbox_info_list.append(value)
+    return bbox_info_list
 
 
 if __name__ == '__main__':
