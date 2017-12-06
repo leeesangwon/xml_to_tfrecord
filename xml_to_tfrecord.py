@@ -54,8 +54,8 @@ def main(_):
     trainval_path = os.path.join(data_path, 'data')
     test_path = os.path.join(data_path, 'test')
 
-    preprocess_dataset.run(trainval_path)
-    preprocess_dataset.run(test_path)
+    preprocess_dataset.run(trainval_path, is_test_data=False)
+    preprocess_dataset.run(test_path, is_test_data=True)
     
     csv_name = output_tfrecord_name
     num_of_cross_val = 5
