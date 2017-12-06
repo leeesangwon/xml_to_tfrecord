@@ -10,11 +10,32 @@ import random
 TRAIN_RATIO = 0.8
 
 def run(csv_name, image_path):
+    """
+    This function get images and xmls from 'image_path/data/*' for train & validation and 'image_path/test/*' for test
+    Args:
+        csv_name: output csv_name
+        image_path: this path should contain '/data' and '/test'
+    Outputs:
+        it produces 3 kinds of csv files:
+            (csv_name)_train_*.csv
+            (csv_name)_validation_*.csv
+            (csv_name)_test.csv
+    """
     column_name = ['filename', 'width', 'height', 'channels', 'class', 'xmin', 'ymin', 'xmax', 'ymax']
     
-    ## trainval
-    benign_list = glob.glob(image_path + '/data/benign/*.xml')
-    cancer_list = glob.glob(image_path + '/data/cancer/*.xml')
+    trainval_path = os.path.join(image_path, 'data')
+    test_path = os.path.join(image_path, 'test')
+
+    gen_csv_for_trainval(csv_name, trainval_path, column_name)
+    gen_csv_for_test(csv_name, test_path, column_name)
+
+    print('Successfully converted xml to csv.')
+    return
+
+
+def gen_csv_for_trainval(csv_name, image_path, column_name):
+    benign_list = glob.glob(image_path + '/benign/*.xml')
+    cancer_list = glob.glob(image_path + '/cancer/*.xml')
     
     for i in range(5):
         benign_train, benign_validation = split_list_by_random(benign_list, TRAIN_RATIO, random_seed=100+i)
@@ -32,20 +53,17 @@ def run(csv_name, image_path):
         train_df.to_csv(csv_name + '_train_' + str(i) + '.csv', index=None)
         validation_df.to_csv(csv_name + '_validation_' + str(i) + '.csv', index=None)
 
-    ## test
-    test_benign_list = glob.glob(image_path + '/test/benign/*.xml')
+
+def gen_csv_for_test(csv_name, image_path, column_name):
+    test_benign_list = glob.glob(image_path + '/benign/*.xml')
     benign_test, _ = split_list_by_random(test_benign_list, 1)
-    test_cancer_list = glob.glob(image_path + '/test/cancer/*.xml')
+    test_cancer_list = glob.glob(image_path + '/cancer/*.xml')
     cancer_test, _ = split_list_by_random(test_cancer_list, 1)
 
     test_list = []
     test_list = parse_xml(benign_test + cancer_test)
     test_df = pd.DataFrame(test_list, columns=column_name)
     test_df.to_csv(csv_name + '_test.csv', index=None)
-
-
-    print('Successfully converted xml to csv.')
-    return
 
 
 def split_list_by_random(list_in, ratio, random_seed=100):
