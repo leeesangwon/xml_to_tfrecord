@@ -1,10 +1,5 @@
 """
-Usage:
-  # From tensorflow/models/
-  # Create train data:
-  python generate_tfrecord.py --csv_input=data/train_labels.csv --img_input=data/train_img/  --output_path=train.record
-  # Create test data:
-  python generate_tfrecord.py --csv_input=data/test_labels.csv  --img_input=data/test_img/  --output_path=test.record
+Convert images and csv files to tfrecords
 """
 from __future__ import division, print_function
 
@@ -17,12 +12,6 @@ from PIL import Image
 sys.path.append('C:/Projects/tf/models/research')
 from object_detection.utils import dataset_util
 
-flags = tf.app.flags
-flags.DEFINE_string('csv_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_train_0.csv', 'Path to the CSV input')
-flags.DEFINE_string('img_input', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/data/', 'Path to the images input')
-flags.DEFINE_string('output_path', 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_train_0.tfrecord', 'Path to output TFRecord')
-FLAGS = flags.FLAGS
-
 
 class InvalidFileNameError(Exception):
     def __init__(self, msg):
@@ -32,34 +21,62 @@ class InvalidFileNameError(Exception):
         return self.msg
 
 
-def class_text_to_int(row_label):
-    if row_label == 'Benign':
-        return 1
-    if row_label == 'Malignant':
-        return 2
-    else:
-        None
+class InvalidClassNameError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 
-def is_benign(row):
-    return is_valid_file(row, ['u', 'b'], 'Benign')
+def run(input_path, csv_name, output_name, num_of_cross_val=5):
+    csv_path = os.path.join(input_path, csv_name)
+    output_path = os.path.join(input_path, output_name)
+
+    trainval_path = os.path.join(input_path, 'data')
+    _gen_tfrecords_for_trainval(trainval_path, csv_path, output_path, num_of_cross_val)
+    
+    test_path = os.path.join(input_path, 'test')
+    _gen_tfrecords_for_test(test_path, csv_path, output_path)
+
+    print('Successfully converted images and csv to tfrecord.')
 
 
-def is_cancer(row):
-    return is_valid_file(row, ['c', 'm'], 'Malignant')
+def _gen_tfrecords_for_trainval(image_path, csv_path, output_path, num_of_cross_val):
+    csv_path_pattern = csv_path + '_%s_%d.csv'
+    output_path_pattern = output_path + '_%s_%d.tfrecord'
+
+    for i in range(num_of_cross_val):
+        for trainval in ['train', 'validation']:
+            csv_input = csv_path_pattern % (trainval, i)
+            output_path = output_path_pattern % (trainval, i)
+            writer = tf.python_io.TFRecordWriter(output_path)
+            examples = pd.read_csv(csv_input)
+            for index, row in examples.iterrows():
+                tf_example = _create_tf_example(row, image_path)
+                writer.write(tf_example.SerializeToString())
+
+            writer.close()
 
 
-def is_valid_file(row, filename_head, classname):
-    is_filename_valid = (row['filename'][0].lower() in filename_head)
-    is_class_valid = (row['class'] == classname)
-    return is_filename_valid and is_class_valid
+def _gen_tfrecords_for_test(image_path, csv_path, output_path):
+    csv_input = csv_path + '_test.csv'
+    output_path = output_path + '_test.tfrecord'
+
+    writer = tf.python_io.TFRecordWriter(output_path)
+    examples = pd.read_csv(csv_input)
+    for index, row in examples.iterrows():
+        tf_example = _create_tf_example(row, image_path)
+        writer.write(tf_example.SerializeToString())
+
+    writer.close()
 
 
-def create_tf_example(row, img_input):
-    if is_benign(row):
-        folder_name = 'benign/'
-    elif is_cancer(row):
-        folder_name = 'cancer/'
+def _create_tf_example(row, img_input):
+    if _is_benign(row):
+        folder_name = 'benign'
+    elif _is_cancer(row):
+        folder_name = 'cancer'
     else:
         raise InvalidFileNameError("Invalid Filename")
     full_path = os.path.join(img_input, folder_name, '{}'.format(row['filename']))
@@ -78,7 +95,7 @@ def create_tf_example(row, img_input):
     ymins = [row['ymin'] / height]
     ymaxs = [row['ymax'] / height]
     classes_text = [row['class'].encode('utf8')]
-    classes = [class_text_to_int(row['class'])]
+    classes = [_class_text_to_int(row['class'])]
     difficult = [0]
     truncated = [0]
 
@@ -108,31 +125,33 @@ def create_tf_example(row, img_input):
     return tf_example
 
 
-def main(_):
-    FLAGS.img_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/data/'
-    for i in range(5):
-        for trainval in ['train', 'validation']:
-            FLAGS.csv_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_' + trainval + '_' + str(i)+'.csv'
-            FLAGS.output_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_' + trainval + '_'+str(i)+'.tfrecord'
-            writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
-            examples = pd.read_csv(FLAGS.csv_input)
-            for index, row in examples.iterrows():
-                tf_example = create_tf_example(row, FLAGS.img_input)
-                writer.write(tf_example.SerializeToString())
+def _is_benign(row):
+    return _is_valid_file(row, ['u', 'b'], 'Benign')
 
-            writer.close()
-    ## test
-    FLAGS.img_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/test/'
-    FLAGS.csv_input = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/medical_A_test.csv'
-    FLAGS.output_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/medical_A_test.tfrecord'
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
-    examples = pd.read_csv(FLAGS.csv_input)
-    for index, row in examples.iterrows():
-        tf_example = create_tf_example(row, FLAGS.img_input)
-        writer.write(tf_example.SerializeToString())
 
-    writer.close()
-    print('conversion complete')
+def _is_cancer(row):
+    return _is_valid_file(row, ['c', 'm'], 'Malignant')
+
+
+def _is_valid_file(row, filename_head, classname):
+    is_filename_valid = (row['filename'][0].lower() in filename_head)
+    is_class_valid = (row['class'] == classname)
+    return is_filename_valid and is_class_valid
+
+
+def _class_text_to_int(row_label):
+    if row_label == 'Benign':
+        return 1
+    if row_label == 'Malignant':
+        return 2
+    else:
+        raise InvalidClassNameError("Class name is not Benign or Malignant")
+
 
 if __name__ == '__main__':
-    tf.app.run()
+    input_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/'
+    csv_name = 'medical_A'
+    output_name = 'medical_A'
+    num_of_cross_val = 5
+
+    run(input_path, csv_name, output_name, num_of_cross_val)
