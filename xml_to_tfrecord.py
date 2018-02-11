@@ -32,8 +32,8 @@ import xml_to_csv
 import csv_to_tfrecord
 
 flags = tf.app.flags
-flags.DEFINE_string('data_path', None, 'Path to the images input')
-flags.DEFINE_string('output_tfrecord_name', None, 'Name of the output TFRecord')
+flags.DEFINE_string('data_path', 'C:/Projects/Medical_image/Endoscopic/xml_to_tfrecord/data/4', 'Path to the images input')
+flags.DEFINE_string('output_tfrecord_name', 'medical_4', 'Name of the output TFRecord')
 flags.DEFINE_string('clear_temp_files', False, 'Option to clear temp files or not. defalut: False')
 FLAGS = flags.FLAGS
 
@@ -58,7 +58,7 @@ def main(_):
     preprocess_dataset.run(test_path)
     
     csv_name = output_tfrecord_name
-    num_of_cross_val = 5
+    num_of_cross_val = 1
 
     xml_to_csv.run(data_path, csv_name, num_of_cross_val)
     csv_to_tfrecord.run(data_path, csv_name, output_tfrecord_name, num_of_cross_val)

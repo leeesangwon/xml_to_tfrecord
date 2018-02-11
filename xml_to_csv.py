@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import random
 
-TRAIN_RATIO = 0.8
+TRAIN_RATIO = 1.0
 
 def run(image_path, csv_name, num_of_cross_val=5):
     """
@@ -44,11 +44,18 @@ def _gen_csv_for_trainval(csv_path, image_path, column_name, num_of_cross_val, t
         benign_train, benign_validation = _split_list_by_random(benign_list, train_ratio, random_seed=100+i)
         cancer_train, cancer_validation = _split_list_by_random(cancer_list, train_ratio, random_seed=100+i)
 
+        train = benign_train + cancer_train
+        validation = benign_validation + cancer_validation
+        
+        random.seed(100+i)
+        random.shuffle(train)
+        random.shuffle(validation)
+
         train_list = []
         validation_list = []
 
-        train_list = _parse_xml(benign_train + cancer_train)
-        validation_list = _parse_xml(benign_validation + cancer_validation)
+        train_list = _parse_xml(train)
+        validation_list = _parse_xml(validation)
         
         train_df = pd.DataFrame(train_list, columns=column_name)
         validation_df = pd.DataFrame(validation_list, columns=column_name)
