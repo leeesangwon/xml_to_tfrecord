@@ -33,8 +33,8 @@ def run(input_path, csv_name, output_name, num_of_cross_val=5):
     csv_path = os.path.join(input_path, csv_name)
     output_path = os.path.join(input_path, output_name)
 
-    trainval_path = os.path.join(input_path, 'data')
-    _gen_tfrecords_for_trainval(trainval_path, csv_path, output_path, num_of_cross_val)
+    # trainval_path = os.path.join(input_path, 'data')
+    # _gen_tfrecords_for_trainval(trainval_path, csv_path, output_path, num_of_cross_val)
     
     test_path = os.path.join(input_path, 'test')
     _gen_tfrecords_for_test(test_path, csv_path, output_path)
@@ -79,49 +79,52 @@ def _create_tf_example(row, img_input):
         folder_name = 'cancer'
     else:
         raise InvalidFileNameError("Invalid Filename")
-    full_path = os.path.join(img_input, folder_name, '{}'.format(row['filename']))
-    with tf.gfile.GFile(full_path, 'rb') as fid:
-        encoded_jpg = fid.read()
-    encoded_jpg_io = io.BytesIO(encoded_jpg)
-    image = Image.open(encoded_jpg_io)
-    width, height = image.size
+    feature_dict = {}
+    for i in range(1, 4):
+        full_path = os.path.join(img_input, folder_name, '{}'.format(row['filename1']))
+        with tf.gfile.GFile(full_path, 'rb') as fid:
+            encoded_jpg = fid.read()
+        encoded_jpg_io = io.BytesIO(encoded_jpg)
+        image = Image.open(encoded_jpg_io)
+        width, height = image.size
 
-    filename = row['filename'].encode('utf8')
-    channels = row['channels']
-    shape = [int(height), int(width), int(channels)]
-    image_format = b'jpg'
-    xmins = [row['xmin'] / width]
-    xmaxs = [row['xmax'] / width]
-    ymins = [row['ymin'] / height]
-    ymaxs = [row['ymax'] / height]
-    classes_text = [row['class'].encode('utf8')]
-    classes = [_class_text_to_int(row['class'])]
-    difficult = [0]
-    truncated = [0]
+        filename = row['filename%s' % i].encode('utf8')
+        channels = row['channels%s' % i]
+        shape = [int(height), int(width), int(channels)]
+        image_format = b'jpg'
+        xmins = [row['xmin%s' % i] / width]
+        xmaxs = [row['xmax%s' % i] / width]
+        ymins = [row['ymin%s' % i] / height]
+        ymaxs = [row['ymax%s' % i] / height]
+        classes_text = [row['class%s' % i].encode('utf8')]
+        classes = [_class_text_to_int(row['class%s' % i])]
+        difficult = [0]
+        truncated = [0]
+        feature_dict.update({
+            'image/height%s' % i: dataset_util.int64_feature(height),
+            'image/width%s' % i: dataset_util.int64_feature(width),
+            'image/filename%s' % i: dataset_util.bytes_feature(filename),
+            'image/source_id%s' % i: dataset_util.bytes_feature(filename),
+            'image/channels%s' % i: dataset_util.int64_feature(channels),
+            'image/shape%s' % i: dataset_util.int64_list_feature(shape),
+            'image/class%s' % i: dataset_util.int64_list_feature(classes),
+            'image/object/bbox/xmin%s' % i: dataset_util.float_list_feature(xmins),
+            'image/object/bbox/xmax%s' % i: dataset_util.float_list_feature(xmaxs),
+            'image/object/bbox/ymin%s' % i: dataset_util.float_list_feature(ymins),
+            'image/object/bbox/ymax%s' % i: dataset_util.float_list_feature(ymaxs),
+            'image/object/class/text%s' % i: dataset_util.bytes_list_feature(classes_text),
+            'image/object/class/label%s' % i: dataset_util.int64_list_feature(classes),
+            'image/object/difficult%s' % i: dataset_util.int64_list_feature(difficult),
+            'image/object/truncated%s' % i: dataset_util.int64_list_feature(truncated),
+            'image/object/bbox/label%s' % i: dataset_util.int64_list_feature(classes),
+            'image/object/bbox/label_text%s' % i: dataset_util.bytes_list_feature(classes_text),
+            'image/object/bbox/difficult%s' % i: dataset_util.int64_list_feature(difficult),
+            'image/object/bbox/truncated%s' % i: dataset_util.int64_list_feature(truncated),
+            'image/format%s' % i: dataset_util.bytes_feature(image_format),
+            'image/encoded%s' % i: dataset_util.bytes_feature(encoded_jpg),
+        })
 
-    tf_example = tf.train.Example(features=tf.train.Features(feature={
-        'image/height': dataset_util.int64_feature(height),
-        'image/width': dataset_util.int64_feature(width),
-        'image/filename': dataset_util.bytes_feature(filename),
-        'image/source_id': dataset_util.bytes_feature(filename),
-        'image/channels': dataset_util.int64_feature(channels),
-        'image/shape': dataset_util.int64_list_feature(shape),
-        'image/class': dataset_util.int64_list_feature(classes),
-        'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-        'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-        'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-        'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-        'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-        'image/object/class/label': dataset_util.int64_list_feature(classes),
-        'image/object/difficult': dataset_util.int64_list_feature(difficult),
-        'image/object/truncated': dataset_util.int64_list_feature(truncated),
-        'image/object/bbox/label': dataset_util.int64_list_feature(classes),
-        'image/object/bbox/label_text': dataset_util.bytes_list_feature(classes_text),
-        'image/object/bbox/difficult': dataset_util.int64_list_feature(difficult),
-        'image/object/bbox/truncated': dataset_util.int64_list_feature(truncated),
-        'image/format': dataset_util.bytes_feature(image_format),
-        'image/encoded': dataset_util.bytes_feature(encoded_jpg),
-    }))
+    tf_example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
     return tf_example
 
 
@@ -134,8 +137,8 @@ def _is_cancer(row):
 
 
 def _is_valid_file(row, filename_head, classname):
-    is_filename_valid = (row['filename'][0].lower() in filename_head)
-    is_class_valid = (row['class'] == classname)
+    is_filename_valid = (row['filename1'][0].lower() in filename_head)
+    is_class_valid = (row['class1'] == classname)
     return is_filename_valid and is_class_valid
 
 
@@ -149,9 +152,9 @@ def _class_text_to_int(row_label):
 
 
 if __name__ == '__main__':
-    input_path = 'C:/Projects/Medical_image/Endoscopic/DATA_edit/detection_1127/DATA_A/'
-    csv_name = 'medical_A'
-    output_name = 'medical_A'
+    input_path = 'C:/Projects/xml_to_tfrecord/data/0'
+    csv_name = 'medical_0'
+    output_name = 'medical_0'
     num_of_cross_val = 5
 
     run(input_path, csv_name, output_name, num_of_cross_val)
