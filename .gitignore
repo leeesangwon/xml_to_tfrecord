@@ -1,5 +1,8 @@
 *.bmp
 *.jpg
+*.xml
+*.csv
+*.tfrecord
 
 # visual studio code
 .vscode/
